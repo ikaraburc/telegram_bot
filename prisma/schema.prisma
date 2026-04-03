@@ -1,0 +1,67 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/telegram_channel_manager_bot/nodejs_space/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model channel {
+  id                 Int            @id @default(autoincrement())
+  telegram_channel_id String        @unique
+  title              String
+  created_at         DateTime       @default(now())
+  messages           message[]
+  banned_users       banned_user[]
+  signals            signal[]
+}
+
+model message {
+  id                  Int       @id @default(autoincrement())
+  channel_id          Int
+  telegram_message_id String
+  user_id             String
+  text                String?
+  created_at          DateTime  @default(now())
+  channel             channel   @relation(fields: [channel_id], references: [id], onDelete: Cascade)
+  signals             signal[]
+
+  @@index([channel_id])
+  @@index([created_at])
+}
+
+model banned_user {
+  id         Int      @id @default(autoincrement())
+  channel_id Int
+  user_id    String
+  username   String?
+  banned_at  DateTime @default(now())
+  channel    channel  @relation(fields: [channel_id], references: [id], onDelete: Cascade)
+
+  @@unique([channel_id, user_id])
+  @@index([channel_id])
+}
+
+model signal {
+  id          Int      @id @default(autoincrement())
+  channel_id  Int
+  message_id  Int
+  symbol      String
+  detected_at DateTime @default(now())
+  channel     channel  @relation(fields: [channel_id], references: [id], onDelete: Cascade)
+  message     message  @relation(fields: [message_id], references: [id], onDelete: Cascade)
+
+  @@index([channel_id])
+  @@index([detected_at])
+}
+
+model banned_word {
+  id   Int    @id @default(autoincrement())
+  word String @unique
+}
